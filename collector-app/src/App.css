@@ -1,0 +1,32 @@
+/* src/components/CollectorGrid.css */
+.duplicate {
+  opacity: 0.5;
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+.duplicate::after {
+  content: "Duplicated!";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 0, 0, 0.1);
+  color: #dc2626;
+  font-weight: bold;
+  font-size: 1rem;
+  padding: 4px 8px;
+  border: 1px solid #dc2626;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+}
