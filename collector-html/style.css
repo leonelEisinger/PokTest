@@ -886,7 +886,7 @@ body {
 
 .pokemon-result .sprite-item {
     margin: 15px auto auto;
-    text-align: center; /* <- Garante que conteúdo interno esteja centralizado */
+    text-align: center;
 }
 
 .pokemon-result img {
@@ -934,6 +934,28 @@ body {
   animation: shinyColor 3s linear infinite;
 }
 
+.type-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    margin: 2px;
+    border-radius: 4px;
+    color: white;
+    font-size: 15px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, .7);
+    text-transform: capitalize;
+    text-align: center;
+}
+
+.types {
+    display: flex;
+    justify-content: center; /* Centraliza horizontalmente */
+    flex-wrap: wrap;         /* Permite quebrar linha se necessário */
+    gap: 3px;                /* Espaço entre os badges */
+    margin-top: 5px;
+}
+
+
 /* Animação de troca de cor do texto */
 @keyframes shinyColor {
   0% { color: gold; }
@@ -960,4 +982,3 @@ body {
     box-shadow: 0 0 10px 4px gold;
   }
 }
-

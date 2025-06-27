@@ -1,3 +1,11 @@
+import { getTypeColor } from './scripts/utils.js';
+
+function saveToInventory(pokemon) {
+    const existing = JSON.parse(localStorage.getItem("inventory")) || [];
+    existing.push(pokemon);
+    localStorage.setItem("inventory", JSON.stringify(existing));
+}
+
 function extractSprites(obj, path = "") {
     const sprites = [];
 
@@ -71,7 +79,6 @@ async function getRandomItem() {
         const pokemonDetails = await pokemonDetailsRes.json();
 
         
-
         // Tipos
         const types = pokemonDetails.types.map(t => t.type.name).join(", ");
 
@@ -82,11 +89,23 @@ async function getRandomItem() {
         const randomSprite = allSprites[Math.floor(Math.random() * allSprites.length)];
 
 
+        saveToInventory({
+            name: randomPokemon.name,
+            sprite: randomSprite.url,
+            label: randomSprite.label,
+            types: types
+        });
+
         // Mostrar só 1 sprite
         loaderContainer.innerHTML = `
             <div class="pokemon-result">
                 <h2>${randomPokemon.name.toUpperCase()}</h2>
-                <p>Tipo(s): ${types}</p>
+                <div class="types">
+                    ${types.split(", ").map(type => {
+                        const color = getTypeColor(type.trim());
+                        return `<span class="type-badge" style="background-color: ${color};">${type}</span>`;
+                    }).join("")}
+                    </div>
                 <div class="sprite-item ${randomSprite.label === "Shiny" ? "shiny" : ""}">
                     <img src="${randomSprite.url}" alt="${randomPokemon.name}" />
                     <p>${randomSprite.label.toUpperCase()}</p>
@@ -98,3 +117,4 @@ async function getRandomItem() {
         btnOpen.disabled = false;
     }, 2800);
 }
+window.getRandomItem = getRandomItem;
