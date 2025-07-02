@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Trophy, Star, User, Target, Award } from 'lucide-react';
+import typeColors from '@/lib/TypeColors';
 
 interface Pokemon {
   id: number | string;
@@ -136,7 +137,7 @@ const Profile = ({ userStats, pokemonHistory }: ProfileProps) => {
             <p className="text-blue-200 text-center">You haven't opened any Pokémon yet.</p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {pokemonHistory.slice().reverse().map((pokemon) => (
+              {pokemonHistory.slice().reverse().slice(0, 10).map((pokemon) => (
                 <div
                   key={pokemon.id}
                   className="p-2 bg-white/10 rounded-lg text-center shadow-md"
@@ -150,10 +151,17 @@ const Profile = ({ userStats, pokemonHistory }: ProfileProps) => {
                   <div className="text-xs text-gray-300">{pokemon.cp} CP</div>
                   <div className="flex justify-center flex-wrap gap-1 mt-1">
                     {pokemon.types.map((type) => (
-                      <Badge key={type} className="text-xs">
-                        {type}
-                      </Badge>
-                    ))}
+                    <Badge
+                      key={type}
+                      className="text-xs font-semibold uppercase rounded px-2 py-1"
+                      style={{
+                        backgroundColor: typeColors[type] || '#888',
+                        color: '#fff'
+                      }}
+                    >
+                      {type}
+                    </Badge>
+                  ))}
                   </div>
                   {pokemon.shiny && (
                     <Badge className="mt-2 bg-yellow-400 text-black">SHINY</Badge>

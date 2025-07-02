@@ -23,7 +23,7 @@ const Index = () => {
     packsOpened: 0,
     pokemonCaught: 0,
     rareCards: 0,
-    coins: 10,
+    coins: 50,
   });
   const [inventory, setInventory] = useState<Pokemon[]>([]);
   const [pokemonHistory, setPokemonHistory] = useState<Pokemon[]>([]);

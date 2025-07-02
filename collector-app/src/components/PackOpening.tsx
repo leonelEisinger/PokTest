@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Gift, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import typeColors from '@/lib/TypeColors';
 
 interface Pokemon {
   id: number;
@@ -148,11 +149,18 @@ const PackOpening = ({ onPackOpened, coins }: PackOpeningProps) => {
                   />
                   <h3 className="font-bold text-white capitalize text-lg">{pokemon.name}</h3>
                   <div className="flex justify-center gap-1 mb-2">
-                    {pokemon.types.map(type => (
-                      <Badge key={type} variant="secondary" className="text-xs">
-                        {type}
-                      </Badge>
-                    ))}
+                    {pokemon.types.map((type) => (
+                    <Badge
+                      key={type}
+                      className="text-xs font-semibold uppercase rounded px-2 py-1"
+                      style={{
+                        backgroundColor: typeColors[type] || '#888',
+                        color: '#fff'
+                      }}
+                    >
+                      {type}
+                    </Badge>
+                  ))}
                   </div>
                   <div className="flex items-center justify-center text-yellow-300">
                     <Star className="w-4 h-4 mr-1" />

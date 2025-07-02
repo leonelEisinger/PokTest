@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import typeColors from '@/lib/TypeColors';
 import {
   Select,
   SelectContent,
@@ -22,6 +23,12 @@ interface Pokemon {
   cp: number;
   shiny: boolean;
 }
+
+const calculateSellValue = (pokemon: Pokemon): number => {
+  return pokemon.shiny
+    ? Math.floor(pokemon.cp * 0.10)
+    : Math.floor(pokemon.cp * 0.02);
+};
 
 interface InventoryProps {
   inventory: Pokemon[];
@@ -62,10 +69,31 @@ const Inventory = ({ inventory, onSellPokemon }: InventoryProps) => {
   const handleSellAllDuplicates = () => {
     const duplicatesToSell = inventory.filter((p) => duplicateIds.includes(p.id as number));
     duplicatesToSell.forEach((pokemon) => {
-      const sellValue = Math.floor(pokemon.cp * 0.2);
+      const sellValue = calculateSellValue(pokemon);
       onSellPokemon(pokemon.id, sellValue);
     });
   };
+
+<div className="mb-4 text-center">
+  <Button
+    onClick={() => {
+      const confirmSell = window.confirm(
+        'Are you sure you want to sell ALL your Pokémon? This cannot be undone.'
+      );
+      if (confirmSell) {
+        inventory.forEach((pokemon) => {
+          const sellValue = calculateSellValue(pokemon);
+          onSellPokemon(pokemon.id, sellValue);
+        });
+      }
+    }}
+    className="bg-red-800 hover:bg-red-900 text-white"
+  >
+    Sell ALL Pokémon
+  </Button>
+</div>
+
+
 
   if (inventory.length === 0) {
     return (
@@ -106,16 +134,38 @@ const Inventory = ({ inventory, onSellPokemon }: InventoryProps) => {
           </Select>
         </div>
 
-        {duplicateIds.length > 0 && (
-          <div className="mb-4 text-center">
+        <div className="mb-4 text-center flex flex-col md:flex-row justify-center gap-4">
+          {duplicateIds.length > 0 && (
             <Button
               onClick={handleSellAllDuplicates}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               Sell All Duplicates
             </Button>
-          </div>
-        )}
+          )}
+
+          {inventory.length > 1 && (
+            <Button
+              onClick={() => {
+                const confirmSell = window.confirm(
+                  'Are you sure you want to sell ALL your Pokémon? This cannot be undone.'
+                );
+                if (confirmSell) {
+                  inventory.forEach((pokemon) => {
+                    const sellValue = calculateSellValue(pokemon);
+                    onSellPokemon(pokemon.id, sellValue);
+                  });
+                }
+              }}
+              className="bg-red-800 hover:bg-red-900 text-white"
+            >
+              Sell ALL Pokémon
+            </Button>
+          )}
+        </div>
+
+
+
       </div>
 
       <div className="mb-4 text-center">
@@ -126,7 +176,7 @@ const Inventory = ({ inventory, onSellPokemon }: InventoryProps) => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         {filteredInventory.map((pokemon) => {
-          const sellPrice = Math.floor(pokemon.cp * 0.2);
+          const sellPrice = calculateSellValue(pokemon);
           return (
             <Card
               key={pokemon.id}
@@ -150,7 +200,14 @@ const Inventory = ({ inventory, onSellPokemon }: InventoryProps) => {
                 <h3 className="font-bold text-white capitalize mb-1">{pokemon.name}</h3>
                 <div className="flex justify-center gap-1 mb-2">
                   {pokemon.types.map((type) => (
-                    <Badge key={type} variant="secondary" className="text-xs">
+                    <Badge
+                      key={type}
+                      className="text-xs font-semibold uppercase rounded px-2 py-1"
+                      style={{
+                        backgroundColor: typeColors[type] || '#888',
+                        color: '#fff'
+                      }}
+                    >
                       {type}
                     </Badge>
                   ))}
