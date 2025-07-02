@@ -1,12 +1,10 @@
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { PackageOpen, User, Trophy, Star } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { PackageOpen, User, Trophy } from 'lucide-react';
 import PackOpening from '@/components/PackOpening';
 import Inventory from '@/components/Inventory';
-import Profile from '@/components/Profile';
+import Profile from '@/components/profile';
 
 interface Pokemon {
   id: number | string;
@@ -16,7 +14,7 @@ interface Pokemon {
   height: number;
   weight: number;
   cp: number;
-  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+  shiny: boolean;
 }
 
 const Index = () => {
@@ -25,25 +23,43 @@ const Index = () => {
     packsOpened: 0,
     pokemonCaught: 0,
     rareCards: 0,
-    coins: 1000
+    coins: 10,
   });
   const [inventory, setInventory] = useState<Pokemon[]>([]);
+  const [pokemonHistory, setPokemonHistory] = useState<Pokemon[]>([]);
 
   const addToInventory = (pokemon: Pokemon) => {
-    setInventory(prev => [...prev, { ...pokemon, id: Date.now() + Math.random() }]);
-    setUserStats(prev => ({
+    const newPokemon = { ...pokemon, id: Date.now() + Math.random() };
+    setInventory((prev) => [...prev, newPokemon]);
+    setPokemonHistory((prev) => [...prev, newPokemon]); // adiciona ao histórico
+
+    setUserStats((prev) => ({
       ...prev,
       pokemonCaught: prev.pokemonCaught + 1,
-      rareCards: pokemon.rarity === 'rare' || pokemon.rarity === 'epic' || pokemon.rarity === 'legendary' ? prev.rareCards + 1 : prev.rareCards
+      rareCards: newPokemon.shiny ? prev.rareCards + 1 : prev.rareCards,
     }));
   };
 
+
   const onPackOpened = (newPokemon: Pokemon[]) => {
-    newPokemon.forEach(pokemon => addToInventory(pokemon));
-    setUserStats(prev => ({
+    newPokemon.forEach((pokemon) => addToInventory(pokemon));
+    setUserStats((prev) => ({
       ...prev,
       packsOpened: prev.packsOpened + 1,
-      coins: prev.coins - 100
+      coins: prev.coins - 10,
+    }));
+  };
+
+  const onSellPokemon = (pokemonId: number | string, value: number) => {
+    const pokemonToSell = inventory.find((p) => p.id === pokemonId);
+    if (!pokemonToSell) return;
+
+    setInventory((prev) => prev.filter((p) => p.id !== pokemonId));
+    setUserStats((prev) => ({
+      ...prev,
+      coins: prev.coins + value,
+      pokemonCaught: prev.pokemonCaught - 1,
+      rareCards: pokemonToSell.shiny ? prev.rareCards - 1 : prev.rareCards,
     }));
   };
 
@@ -119,17 +135,15 @@ const Index = () => {
         {/* Main Content */}
         <div className="max-w-6xl mx-auto">
           {activeTab === 'packs' && (
-            <PackOpening 
-              onPackOpened={onPackOpened} 
-              coins={userStats.coins}
-            />
+            <PackOpening onPackOpened={onPackOpened} coins={userStats.coins} />
           )}
           {activeTab === 'inventory' && (
-            <Inventory inventory={inventory} />
+            <Inventory inventory={inventory} onSellPokemon={onSellPokemon} />
           )}
           {activeTab === 'profile' && (
-            <Profile userStats={userStats} />
+            <Profile userStats={userStats} pokemonHistory={pokemonHistory} />
           )}
+
         </div>
       </div>
     </div>

@@ -1,11 +1,16 @@
-
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Star, Search, Filter } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import { Star, Search } from 'lucide-react';
 
 interface Pokemon {
   id: number | string;
@@ -15,34 +20,52 @@ interface Pokemon {
   height: number;
   weight: number;
   cp: number;
-  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+  shiny: boolean;
 }
 
 interface InventoryProps {
   inventory: Pokemon[];
+  onSellPokemon: (pokemonId: number | string, value: number) => void;
 }
 
-const Inventory = ({ inventory }: InventoryProps) => {
+const Inventory = ({ inventory, onSellPokemon }: InventoryProps) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [rarityFilter, setRarityFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
 
-  const rarityColors = {
-    common: 'from-gray-400 to-gray-600',
-    uncommon: 'from-green-400 to-green-600',
-    rare: 'from-blue-400 to-blue-600',
-    epic: 'from-purple-400 to-purple-600',
-    legendary: 'from-yellow-400 to-orange-500'
-  };
-
-  const filteredInventory = inventory.filter(pokemon => {
+  const filteredInventory = inventory.filter((pokemon) => {
     const matchesSearch = pokemon.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRarity = rarityFilter === 'all' || pokemon.rarity === rarityFilter;
     const matchesType = typeFilter === 'all' || pokemon.types.includes(typeFilter);
-    return matchesSearch && matchesRarity && matchesType;
+    return matchesSearch && matchesType;
   });
 
-  const allTypes: string[] = [...new Set(inventory.flatMap(pokemon => pokemon.types))];
+  const allTypes: string[] = [...new Set(inventory.flatMap((pokemon) => pokemon.types))];
+
+  const duplicateIds = useMemo(() => {
+    const nameMap = new Map<string, number[]>();
+    inventory.forEach((pokemon) => {
+      if (!nameMap.has(pokemon.name)) {
+        nameMap.set(pokemon.name, []);
+      }
+      nameMap.get(pokemon.name)?.push(pokemon.id as number);
+    });
+
+    const duplicates: number[] = [];
+    nameMap.forEach((ids) => {
+      if (ids.length > 1) {
+        duplicates.push(...ids.slice(1)); // Keep one, sell others
+      }
+    });
+
+    return duplicates;
+  }, [inventory]);
+
+  const handleSellAllDuplicates = () => {
+    const duplicatesToSell = inventory.filter((p) => duplicateIds.includes(p.id as number));
+    duplicatesToSell.forEach((pokemon) => {
+      const sellValue = Math.floor(pokemon.cp * 0.2);
+      onSellPokemon(pokemon.id, sellValue);
+    });
+  };
 
   if (inventory.length === 0) {
     return (
@@ -58,7 +81,7 @@ const Inventory = ({ inventory }: InventoryProps) => {
     <div>
       <div className="mb-6">
         <h2 className="text-3xl font-bold text-white mb-4 text-center">Your Collection</h2>
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
@@ -68,31 +91,31 @@ const Inventory = ({ inventory }: InventoryProps) => {
               className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400"
             />
           </div>
-          <Select value={rarityFilter} onValueChange={setRarityFilter}>
-            <SelectTrigger className="w-full md:w-48 bg-white/10 border-white/20 text-white">
-              <SelectValue placeholder="Filter by rarity" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Rarities</SelectItem>
-              <SelectItem value="common">Common</SelectItem>
-              <SelectItem value="uncommon">Uncommon</SelectItem>
-              <SelectItem value="rare">Rare</SelectItem>
-              <SelectItem value="epic">Epic</SelectItem>
-              <SelectItem value="legendary">Legendary</SelectItem>
-            </SelectContent>
-          </Select>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-full md:w-48 bg-white/10 border-white/20 text-white">
               <SelectValue placeholder="Filter by type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
-              {allTypes.map(type => (
-                <SelectItem key={type} value={type}>{type}</SelectItem>
+              {allTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+
+        {duplicateIds.length > 0 && (
+          <div className="mb-4 text-center">
+            <Button
+              onClick={handleSellAllDuplicates}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Sell All Duplicates
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="mb-4 text-center">
@@ -101,48 +124,60 @@ const Inventory = ({ inventory }: InventoryProps) => {
         </Badge>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {filteredInventory.map((pokemon) => (
-          <Card 
-            key={pokemon.id}
-            className={`bg-gradient-to-br ${rarityColors[pokemon.rarity]} border-0 shadow-lg transform hover:scale-105 transition-all duration-300 hover:shadow-2xl`}
-          >
-            <CardContent className="p-4 text-center">
-              <Badge className={`mb-2 ${pokemon.rarity === 'legendary' ? 'bg-yellow-500 text-black' : 
-                pokemon.rarity === 'epic' ? 'bg-purple-600' : 
-                pokemon.rarity === 'rare' ? 'bg-blue-600' : 
-                pokemon.rarity === 'uncommon' ? 'bg-green-600' : 'bg-gray-600'}`}>
-                {pokemon.rarity.toUpperCase()}
-              </Badge>
-              <img 
-                src={pokemon.image} 
-                alt={pokemon.name}
-                className="w-20 h-20 mx-auto mb-2 drop-shadow-lg"
-              />
-              <h3 className="font-bold text-white capitalize mb-1">{pokemon.name}</h3>
-              <div className="flex justify-center gap-1 mb-2">
-                {pokemon.types.map(type => (
-                  <Badge key={type} variant="secondary" className="text-xs">
-                    {type}
-                  </Badge>
-                ))}
-              </div>
-              <div className="flex items-center justify-center text-yellow-300">
-                <Star className="w-4 h-4 mr-1" />
-                <span className="font-bold text-sm">{pokemon.cp} CP</span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        {filteredInventory.map((pokemon) => {
+          const sellPrice = Math.floor(pokemon.cp * 0.2);
+          return (
+            <Card
+              key={pokemon.id}
+              className={`w-full bg-gradient-to-br ${
+                pokemon.shiny ? 'from-yellow-400 to-yellow-600' : 'from-gray-600 to-gray-800'
+              } border-0 shadow-lg transform hover:scale-105 transition-all duration-300 hover:shadow-2xl`}
+            >
+              <CardContent className="p-4 text-center">
+                <Badge
+                  className={`mb-2 ${
+                    pokemon.shiny ? 'bg-yellow-400 text-black' : 'bg-gray-500 text-white'
+                  }`}
+                >
+                  {pokemon.shiny ? 'SHINY' : 'NORMAL'}
+                </Badge>
+                <img
+                  src={pokemon.image}
+                  alt={pokemon.name}
+                  className="w-24 h-24 mx-auto mb-2 drop-shadow-lg"
+                />
+                <h3 className="font-bold text-white capitalize mb-1">{pokemon.name}</h3>
+                <div className="flex justify-center gap-1 mb-2">
+                  {pokemon.types.map((type) => (
+                    <Badge key={type} variant="secondary" className="text-xs">
+                      {type}
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex items-center justify-center text-yellow-300 mb-3">
+                  <Star className="w-4 h-4 mr-1" />
+                  <span className="font-bold text-sm">{pokemon.cp} CP</span>
+                </div>
+                <Button
+                  size="sm"
+                  className="bg-red-500 hover:bg-red-600 text-white"
+                  onClick={() => onSellPokemon(pokemon.id, sellPrice)}
+                >
+                  Sell for {sellPrice} Coins
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {filteredInventory.length === 0 && inventory.length > 0 && (
         <div className="text-center py-8">
           <p className="text-white text-lg">No Pokémon match your current filters.</p>
-          <Button 
+          <Button
             onClick={() => {
               setSearchTerm('');
-              setRarityFilter('all');
               setTypeFilter('all');
             }}
             className="mt-4 bg-blue-600 hover:bg-blue-700"

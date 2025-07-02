@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,7 +13,7 @@ interface Pokemon {
   height: number;
   weight: number;
   cp: number;
-  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+  shiny: boolean;
 }
 
 interface PackOpeningProps {
@@ -28,40 +27,25 @@ const PackOpening = ({ onPackOpened, coins }: PackOpeningProps) => {
   const [showResults, setShowResults] = useState(false);
   const { toast } = useToast();
 
-  const rarityColors = {
-    common: 'from-gray-400 to-gray-600',
-    uncommon: 'from-green-400 to-green-600',
-    rare: 'from-blue-400 to-blue-600',
-    epic: 'from-purple-400 to-purple-600',
-    legendary: 'from-yellow-400 to-orange-500'
-  };
-
-  const getRarity = (): Pokemon['rarity'] => {
-    const rand = Math.random();
-    if (rand < 0.02) return 'legendary';
-    if (rand < 0.08) return 'epic';
-    if (rand < 0.20) return 'rare';
-    if (rand < 0.40) return 'uncommon';
-    return 'common';
-  };
-
   const fetchRandomPokemon = async (): Promise<Pokemon | null> => {
     try {
       const randomId = Math.floor(Math.random() * 300) + 1;
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${randomId}`);
       const data = await response.json();
-      
-      const rarity = getRarity();
+
+      const isShiny = Math.random() < 0.1; // 10% chance de ser shiny
       const cp = Math.floor(Math.random() * 1000) + 100;
-      
+
       return {
         name: data.name,
-        image: data.sprites.other['official-artwork'].front_default || data.sprites.front_default,
+        image: isShiny
+        ? data.sprites.front_shiny
+        : data.sprites.other['official-artwork'].front_default || data.sprites.front_default,
         types: data.types.map((type: any) => type.type.name),
         height: data.height,
         weight: data.weight,
         cp: cp,
-        rarity: rarity,
+        shiny: isShiny,
         id: data.id
       };
     } catch (error) {
@@ -71,10 +55,10 @@ const PackOpening = ({ onPackOpened, coins }: PackOpeningProps) => {
   };
 
   const openPack = async () => {
-    if (coins < 100) {
+    if (coins < 10) {
       toast({
         title: "Not enough coins!",
-        description: "You need 100 coins to open a pack.",
+        description: "You need 10 coins to open a pack.",
         variant: "destructive"
       });
       return;
@@ -82,25 +66,25 @@ const PackOpening = ({ onPackOpened, coins }: PackOpeningProps) => {
 
     setIsOpening(true);
     setShowResults(false);
-    
-    const pokemonPromises = Array(5).fill(null).map(() => fetchRandomPokemon());
+
+    const pokemonPromises = [fetchRandomPokemon()]; // Only one
     const newPokemon = await Promise.all(pokemonPromises);
     const validPokemon = newPokemon.filter((pokemon): pokemon is Pokemon => pokemon !== null);
-    
+
     setTimeout(() => {
       setRevealedPokemon(validPokemon);
       setShowResults(true);
       setIsOpening(false);
       onPackOpened(validPokemon);
-      
-      const rareCount = validPokemon.filter(p => ['rare', 'epic', 'legendary'].includes(p.rarity)).length;
-      if (rareCount > 0) {
+
+      const shinyCount = validPokemon.filter(p => p.shiny).length;
+      if (shinyCount > 0) {
         toast({
-          title: "Amazing pull!",
-          description: `You got ${rareCount} rare card(s)!`,
+          title: "You found a Shiny!",
+          description: `You got ${shinyCount} shiny Pokémon!`,
         });
       }
-    }, 3000);
+    }, 2000);
   };
 
   return (
@@ -111,21 +95,21 @@ const PackOpening = ({ onPackOpened, coins }: PackOpeningProps) => {
             <CardContent className="p-8">
               <div className="mb-6">
                 <Gift className="w-24 h-24 mx-auto text-white mb-4" />
-                <h2 className="text-2xl font-bold text-white mb-2">Pokémon Pack</h2>
-                <p className="text-purple-100">Contains 5 random Pokémon cards</p>
+                <h2 className="text-2xl font-bold text-white mb-2">Pokémon Card</h2>
+                <p className="text-purple-100">Contains 1 random Pokémon card</p>
               </div>
               <Badge className="bg-yellow-500 text-black mb-4 text-lg px-4 py-1">
-                100 Coins
+                10 Coins
               </Badge>
               <Button 
                 onClick={openPack}
-                disabled={coins < 100}
+                disabled={coins < 10}
                 className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black font-bold py-3 text-lg"
               >
                 <Sparkles className="w-5 h-5 mr-2" />
                 Open Pack!
               </Button>
-              {coins < 100 && (
+              {coins < 10 && (
                 <p className="text-red-300 mt-2 text-sm">Not enough coins!</p>
               )}
             </CardContent>
@@ -143,20 +127,19 @@ const PackOpening = ({ onPackOpened, coins }: PackOpeningProps) => {
 
       {showResults && (
         <div>
-          <h2 className="text-3xl font-bold text-white mb-6">Your New Pokémon!</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+          <h2 className="text-3xl font-bold text-white mb-6">Your Pokémon!</h2>
+          <div className="flex justify-center items-center flex-wrap gap-6 mb-6">
             {revealedPokemon.map((pokemon, index) => (
               <Card 
                 key={index} 
-                className={`bg-gradient-to-br ${rarityColors[pokemon.rarity]} border-0 shadow-lg transform hover:scale-105 transition-all duration-300 animate-in fade-in-50`}
+                className={`w-64 bg-gradient-to-br ${
+                  pokemon.shiny ? 'from-yellow-400 to-yellow-600' : 'from-gray-500 to-gray-700'
+                } border-0 shadow-lg transform hover:scale-105 transition-all duration-300 animate-in fade-in-50`}
                 style={{ animationDelay: `${index * 0.2}s` }}
               >
                 <CardContent className="p-4 text-center">
-                  <Badge className={`mb-2 ${pokemon.rarity === 'legendary' ? 'bg-yellow-500 text-black' : 
-                    pokemon.rarity === 'epic' ? 'bg-purple-600' : 
-                    pokemon.rarity === 'rare' ? 'bg-blue-600' : 
-                    pokemon.rarity === 'uncommon' ? 'bg-green-600' : 'bg-gray-600'}`}>
-                    {pokemon.rarity.toUpperCase()}
+                  <Badge className={pokemon.shiny ? 'bg-yellow-400 text-black' : 'bg-gray-500 text-white'}>
+                    {pokemon.shiny ? 'SHINY' : 'NORMAL'}
                   </Badge>
                   <img 
                     src={pokemon.image} 
@@ -180,10 +163,12 @@ const PackOpening = ({ onPackOpened, coins }: PackOpeningProps) => {
             ))}
           </div>
           <Button 
-            onClick={() => setShowResults(false)}
+            onClick={() => {setShowResults(false)
+              openPack();}
+            }
             className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2"
           >
-            Open Another Pack
+            Open Another Card
           </Button>
         </div>
       )}
